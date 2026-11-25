@@ -1,3 +1,3 @@
 # ROS 节点入口
 
-当前没有可执行节点。实现后补充启动说明、依赖及安装规则。
+`strategy_demo.py`：离线公开历史样例；`verify_strategy.py`：全路径验证；`head_action.py`：默认预览，`--run` 执行头部动作。具体命令与实测边界见上级 README。

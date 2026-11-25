@@ -1,0 +1,238 @@
+{
+  "source": "/home/lemon/robot_ros_application/catkin_ws/src/ros_AIUI_node/config/VoiceControlConfig.json",
+  "sha256": "d725c5fc3d5eed0d88dd55cdf7bc6c7a5837c673ef715b907827fa6520a17de6",
+  "routes": [
+    {
+      "name": "前进",
+      "keywords": [
+        "前进",
+        "往前走"
+      ],
+      "cmd_type": "execute_func",
+      "target": "walk_forward"
+    },
+    {
+      "name": "后退",
+      "keywords": [
+        "后退",
+        "往后走"
+      ],
+      "cmd_type": "execute_func",
+      "target": "walk_back"
+    },
+    {
+      "name": "往左走",
+      "keywords": [
+        "往左走",
+        "向左走"
+      ],
+      "cmd_type": "execute_func",
+      "target": "walk_left"
+    },
+    {
+      "name": "往右走",
+      "keywords": [
+        "往右走",
+        "向右走"
+      ],
+      "cmd_type": "execute_func",
+      "target": "walk_right"
+    },
+    {
+      "name": "往左转",
+      "keywords": [
+        "往左转",
+        "左转"
+      ],
+      "cmd_type": "execute_func",
+      "target": "turn_left"
+    },
+    {
+      "name": "往右转",
+      "keywords": [
+        "往右转",
+        "右转"
+      ],
+      "cmd_type": "execute_func",
+      "target": "turn_right"
+    },
+    {
+      "name": "举手",
+      "keywords": [
+        "举手",
+        "举起你的手"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/举手.py"
+    },
+    {
+      "name": "摇头",
+      "keywords": [
+        "摇头",
+        "请摇头"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/摇头.py"
+    },
+    {
+      "name": "伸展手臂",
+      "keywords": [
+        "伸展手臂",
+        "伸展一下手臂"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/伸展手臂.py"
+    },
+    {
+      "name": "点头",
+      "keywords": [
+        "点头"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/点头.py"
+    },
+    {
+      "name": "下蹲",
+      "keywords": [
+        "下蹲"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/下蹲.py"
+    },
+    {
+      "name": "人脸识别",
+      "keywords": [
+        "人脸识别",
+        "人脸追踪"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/人脸追踪案例.py"
+    },
+    {
+      "name": "踢球",
+      "keywords": [
+        "踢球",
+        "踢个球"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/踢红球案例.py"
+    },
+    {
+      "name": "避障",
+      "keywords": [
+        "避障"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/避障案例.py"
+    },
+    {
+      "name": "跳舞",
+      "keywords": [
+        "跳舞",
+        "跳个舞"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/Say-yeah舞蹈案例.py"
+    },
+    {
+      "name": "上楼梯",
+      "keywords": [
+        "上楼梯",
+        "走楼梯"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/上楼梯案例.py"
+    },
+    {
+      "name": "自平衡和人脸追踪",
+      "keywords": [
+        "自平衡和人脸追踪"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/自平衡+人脸追踪.py"
+    },
+    {
+      "name": "走s型曲线",
+      "keywords": [
+        "走s型曲线"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/S形曲线行走案例.py"
+    },
+    {
+      "name": "太极",
+      "keywords": [
+        "太极",
+        "打太极"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/武当太极.py"
+    },
+    {
+      "name": "停止运行",
+      "keywords": [
+        "停止运行",
+        "停下来"
+      ],
+      "cmd_type": "stop_node",
+      "target": ""
+    },
+    {
+      "name": "wakeup",
+      "keywords": [
+        "wakeup"
+      ],
+      "cmd_type": "wakeup",
+      "target": ""
+    },
+    {
+      "name": "检测人脸",
+      "keywords": [
+        "检测人脸",
+        "请检测人脸"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/voice_face_detect.py"
+    },
+    {
+      "name": "检测红球",
+      "keywords": [
+        "检测红球",
+        "找红球"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/exp8_liujie/voice_red_ball_detect_liujie.py"
+    },
+    {
+      "name": "检测数字",
+      "keywords": [
+        "检测数字"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/voice_digital_detect.py"
+    },
+    {
+      "name": "检测小球",
+      "keywords": [
+        "检测小球"
+      ],
+      "cmd_type": "run_node",
+      "target": "/home/lemon/robot_ros_application/catkin_ws/src/ros_actions_node/scripts/voice_ball_detect.py"
+    }
+  ],
+  "music_files": [
+    "angry.wav",
+    "fear.wav",
+    "happy.wav",
+    "hello.wav",
+    "neutral.wav",
+    "rock_paper_scissors_paper.wav",
+    "rock_paper_scissors_rock.wav",
+    "rock_paper_scissors_scissors.wav",
+    "sad.wav",
+    "say_yeah.mp3",
+    "surprise.wav",
+    "tai_chi.wav",
+    "Vocational_lecture.mp3"
+  ]
+}

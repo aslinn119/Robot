@@ -3,4 +3,10 @@ project(robot_strategy)
 find_package(catkin REQUIRED)
 catkin_python_setup()
 catkin_package()
-# 节点实现后补充安装规则和依赖。
+catkin_install_python(PROGRAMS
+  scripts/head_action.py
+  scripts/game_gesture.py
+  scripts/strategy_demo.py
+  scripts/verify_strategy.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
