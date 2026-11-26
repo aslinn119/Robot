@@ -1,58 +1,27 @@
-# D 策略与 C 裁判调用说明
+# D 新版策略接入说明
 
-本次调用 D 已交付的真实纯 Python 策略函数，未调用机器人动作。
+当前以 GitHub main 的 D 官方统一入口 `robot_strategy.team_strategy.decide` 为准。原样快照位于 `src/vendor_d/`，具体仓库提交与三份源码 SHA256 见 `D_STRATEGY_SOURCE.json`。旧策略已备份，不修改 D 原始算法。
 
-## 源码来源与保留方式
+## 调用关系
 
-机器人挂载路径：
-`Z:\team_project_d\alice_stage1_20261119\robot_strategy\src\robot_strategy\strategy.py`
+`run_d_strategy_client.py` → `network_v1.d_strategy_adapter.decide` → `vendor_d.team_strategy.decide`。
 
-原样快照：`src/vendor_d/strategy.py`。源文件与快照 SHA256 均为：
-`22E93ACE76CFDCB1E5741E9F9305843D7FDB05F0C1E24567870E276D6C2419B8`。
+统一调用格式：`decide(payload, game_id=command['game_id'], profile=frozen_profile)`。payload 保持 HTTP v1.0，不额外加入秘密字段。
 
-D 目录内 README 仍写着骨架，但 strategy.py 已实际实现函数。此说明以读到并执行的源码为准；没有覆盖或修改机器人上的 D 文件。
+- 猜牌：由 D 根据局号、公开历史和剩余次数决定提问；支持开场轮换和偏好。
+- 藏牌：由 D 的 hide_plan 使用 decision_seed、正式问题序号和 lie_used 生成确定回答。C 不再自行生成假话计划。
+- 同局上下文固定；客户端从最近 20 条对局概要中选择正常结束且合法的公开记录，调用 replay_profile。中断或无效局不参与偏好。
+- 仅剩多候选且次数为零时，D 返回 certainty=guess 的显式猜测，C 不将其当作唯一确定。
+- 猜牌输入不含秘密数字；新版卡牌可见性规则见 `CARD_GAME_RULES.md`。
 
-## 接口适配
+## 验证范围
 
-适配文件：`src/network_v1/d_strategy_adapter.py`，入口：
+D 原始全开场脚本：10 种开场、1144 个合法节点、582 条终止路径通过，最大七问。C 集成测试使用固定局号，覆盖其 58 条合法完整对局路径。二者测试范围不同，不能把 582 条都称作 C 完整对局验证。
 
-```python
-from network_v1.d_strategy_adapter import decide
-result = decide(command['payload'])
-```
+D 原始策略、藏牌计划、跨局偏好测试已加入共享测试目录。全部测试均为软件调用，没有执行机器人动作。
 
-| 网络协议 | D 已实现的函数字段 |
-|---|---|
-| history[].comparison | history[].kind |
-| remaining_questions | suggest(history, remaining) 的 remaining |
-| 合法候选 candidates | 排序后的 s0 + s1 |
-| decision=question | status=question 的 proposal |
-| decision=final_submit | status=certain、proposal.kind=submit |
-| answer、lie_applied | answer_suggestion 返回的 answer、uses_lie |
+## 生效
 
-D 对“下一问”的搜索算法保持原样。适配器不读取 C 私密登记值，只将该任务允许的公开历史交给 suggest。
+入口仍为 `tools/run_d_strategy_client.py`，默认服务器 `http://127.0.0.1:8780`。更新文件后须停止旧 D 客户端再启动。由于 C 当前绑定模块实例且没有 reset 接口，应在旧局结束后统一重启 C/A/B/D，避免 MODULE_CONFLICT。
 
-D 的藏牌回答函数接收 use_lie 开关，尚未直接接收协议的 decision_seed。适配器以固定 seed 选择 0～7 的计划序号，再调用 D 的 answer_suggestion；这是适配层补充的确定性计划。假话额度仍由 C 核验、确认后记账，不由适配器扣减。
-
-D 返回 inconsistent 或 insufficient 时，适配器抛出 StrategyUnavailable，不编造候选或猜测。接入长期运行的 D 网络客户端时，应将其转为明确的失败回执，供 C 暂停处理。
-
-## 自动调用方式
-
-```powershell
-cd D:\RobanGuessCard_C_Liujie
-.\.venv\Scripts\python.exe tools\run_d_integration.py
-```
-
-测试会：
-
-1. 枚举 D 策略树的全部 56 条合法路径。
-2. 每条路径实际通过 C 的登记、私密确认、D 提问、回答确认、最终猜测及揭牌流程。
-3. 检查最终猜中、最多七问、假话次数不超过一次。
-4. 验证藏牌回答在固定种子下重试一致，且不会使用第二次假话。
-5. 验证信息不足时不会编造成功结果。
-
-其中 A、B、JPEG 图片仍是软件测试夹具；真正被调用的是 D 的策略函数和 C 的裁判逻辑。不是语音识别、实际识牌或动作的硬件验收。报告自动保存到 logs/d_integration_*.txt。
-
-## 后续联调边界
-
-当前完成的是本地函数适配及自动对局验证，还没有启动 D 常驻的 HTTP 任务拉取客户端。该客户端需要把 strategy.decide 的 payload 传给 decide，再回传规范任务结果。motion.execute 仍由 D 的机器人动作端单独负责，不能用策略测试结果代替动作完成回执。
+本轮只更新纯策略和客户端，没有调用或替换 D 的动作脚本。共享目录使用原样快照，因此不依赖机器人旧独立目录的版本。

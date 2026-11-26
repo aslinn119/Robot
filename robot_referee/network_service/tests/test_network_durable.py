@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from network_v1.durable import DurableCoordinator
 from network_v1.transport import ProtocolError, create_server
 import test_network_game as game_tests
+from robot_fixture import prepare_robot_card
 
 
 class DurableTests(unittest.TestCase):
@@ -25,6 +26,7 @@ class DurableTests(unittest.TestCase):
         self.key = uuid4().hex
         self.event('module.heartbeat', dict(instance_id=self.instance, module_status='ready', active_command_ids=[], capabilities=['speech.say','speech.listen'], runtime_mode='mock'))
         self.c.create_game('C', self.body, self.key)
+        prepare_robot_card(self.c)
 
     def event(self, kind, payload, cmd=None):
         e = dict(protocol_version='1.0', request_id=uuid4().hex, game_id=cmd['game_id'] if cmd else None, input_epoch=cmd['input_epoch'] if cmd else None, source='A', command_id=cmd['command_id'] if cmd else None, event_type=kind, payload=payload)
@@ -130,7 +132,7 @@ class DurableTests(unittest.TestCase):
         with patch.object(self.c,'_save',side_effect=OSError('disk')):
             with self.assertRaises(ProtocolError):self.c.tick()
         self.assertFalse(self.c.public()['paused'])
-        self.assertEqual(next(iter(self.c.tasks.values()))['status'],'queued')
+        self.assertTrue(any(t['status']=='queued' and t['command']['target']=='A' for t in self.c.tasks.values()))
 
     def test_history_http_never_serves_private_snapshot(self):
         server = create_server(self.c,0)
@@ -160,6 +162,7 @@ class DurableGameFlowTests(game_tests.NetworkGameTests):
         self.addCleanup(temp.cleanup)
         with patch('test_network_game.Coordinator', side_effect=lambda tokens: DurableCoordinator(tokens, temp.name)):
             super().setUp()
+            prepare_robot_card(self.c)
 
 
 if __name__=='__main__':unittest.main()

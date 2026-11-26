@@ -60,10 +60,12 @@ class PlayerNetworkTests(unittest.TestCase):
         return cmd,body,evidence
 
     def register(self):
-        self.capture(7)
-        cmd=self.take('B')
-        self.done(cmd,dict(candidate_id=cmd['payload']['candidate_id'],candidate_version=cmd['payload']['candidate_version'],confirmed=True))
         self.prompt()
+
+    def new_robot_game(self):
+        self.c.state=None
+        self.c.tasks={}
+        self.c.create_game('C',dict(protocol_version='1.0',mode='robot_hides',runtime_mode='mock'),uuid4().hex)
 
     def strategy(self,decision='question',number=5):
         cmd=self.take('D','strategy')
@@ -112,6 +114,7 @@ class PlayerNetworkTests(unittest.TestCase):
         self.assertEqual(self.c.public()['result']['reason_code'],'EXCESS_LIES')
 
     def test_registration_private_and_strategy_sanitized(self):
+        self.new_robot_game()
         self.capture(7)
         state=self.c.public()
         self.assertIsNone(state['pending'])
@@ -122,8 +125,8 @@ class PlayerNetworkTests(unittest.TestCase):
         self.done(cmd,dict(candidate_id=cmd['payload']['candidate_id'],candidate_version=cmd['payload']['candidate_version'],confirmed=True))
         speech=self.prompt()
         self.assertNotIn('7',speech['payload']['text'])
-        strategy=self.take('D','strategy')
-        self.assertEqual(set(strategy['payload']),{'purpose','mode','history','remaining_questions','max_lies'})
+        self.assertEqual(self.c.secret,7)
+        self.assertEqual(self.c.public()['phase'],'waiting_question')
 
     def test_answer_count_and_duplicate(self):
         self.register();self.strategy();self.prompt();self.utter('answer',True)
@@ -139,18 +142,19 @@ class PlayerNetworkTests(unittest.TestCase):
         self.assertEqual(self.c.public()['remaining_questions'],7)
         self.assertEqual(self.c.public()['phase'],'waiting_answer')
 
-    def test_reveal_two_mismatches(self):
+    def test_first_reveal_is_truth_source(self):
         self.register();self.final();self.reveal(8)
-        self.assertEqual(self.c.mismatch_count,1)
-        self.reveal(9)
-        self.assertEqual(self.c.public()['result']['reason_code'],'REVEAL_MISMATCH')
-        self.assertIsNone(self.c.public()['result']['revealed_number'])
+        self.assertEqual(self.c.public()['result']['outcome'],'hider_win')
+        self.assertEqual(self.c.public()['result']['revealed_number'],8)
 
-    def test_reveal_retry_recovers(self):
-        self.register();self.final();self.reveal(8);self.reveal(7)
+    def test_cancel_reveal_recaptures_before_judging(self):
+        self.register();self.final();self.capture(8);self.prompt();self.utter('cancel')
+        self.assertIsNone(self.c.secret)
+        self.reveal(7)
         self.assertEqual(self.c.public()['result']['outcome'],'guesser_win')
 
     def test_rejected_registration_recaptures(self):
+        self.new_robot_game()
         self.capture(7)
         cmd=self.take('B')
         self.done(cmd,dict(candidate_id=cmd['payload']['candidate_id'],candidate_version=cmd['payload']['candidate_version'],confirmed=False))
@@ -158,12 +162,14 @@ class PlayerNetworkTests(unittest.TestCase):
         self.assertEqual(self.c.public()['phase'],'registration_capture')
 
     def test_wrong_candidate_id_does_not_lock(self):
+        self.new_robot_game()
         self.capture(7);cmd=self.take('B')
         with self.assertRaises(ProtocolError):self.done(cmd,dict(candidate_id=uuid4().hex,candidate_version=cmd['payload']['candidate_version'],confirmed=True))
         self.assertIsNone(self.c.secret)
         self.assertEqual(self.c.lookup('B',cmd['command_id'])['status'],'running')
 
     def test_fake_jpeg_rejected(self):
+        self.new_robot_game()
         cmd=self.take('B')
         body=dict(protocol_version='1.0',game_id=cmd['game_id'],command_id=cmd['command_id'],input_epoch=cmd['input_epoch'],mime_type='image/jpeg',image_base64=base64.b64encode(b'not an image').decode())
         with self.assertRaises(ProtocolError):self.c.upload_evidence('B',body,uuid4().hex)
@@ -175,6 +181,7 @@ class PlayerNetworkTests(unittest.TestCase):
         return self.c.event('C',e,'')
 
     def test_pause_registration_resume_private_only(self):
+        self.new_robot_game()
         self.capture(7)
         old=self.c.candidate['id']
         self.control('pause');self.control('resume')
@@ -197,6 +204,7 @@ class PlayerNetworkTests(unittest.TestCase):
         self.assertEqual(self.c.public()['remaining_questions'],6)
 
     def test_evidence_idempotence_and_permissions(self):
+        self.new_robot_game()
         cmd=self.take('B')
         body=dict(protocol_version='1.0',game_id=cmd['game_id'],command_id=cmd['command_id'],input_epoch=cmd['input_epoch'],mime_type='image/jpeg',image_base64=base64.b64encode(self.jpeg).decode())
         key=uuid4().hex

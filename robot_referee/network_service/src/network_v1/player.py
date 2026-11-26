@@ -21,7 +21,7 @@ class GameCoordinator(Coordinator):
         self.exit_context = None
 
     def create_game(self, role, body, key):
-        if not isinstance(body, dict) or body.get('mode') != 'player_hides':
+        if not isinstance(body, dict) or body.get('mode') not in ('player_hides','robot_hides'):
             return super().create_game(role, body, key)
         if role != 'C':
             raise ProtocolError(403, 'FORBIDDEN')
@@ -39,8 +39,13 @@ class GameCoordinator(Coordinator):
         for task in self.tasks.values():
             if task['status'] == 'queued':
                 task['status'] = 'cancelled'
-        self.state.update(mode='player_hides', phase='registration_capture')
-        self.capture('registration')
+        self.state.update(mode=body['mode'])
+        if body['mode'] == 'player_hides':
+            self.state['phase'] = 'waiting_strategy'
+            self.say('请藏好卡牌，不要让我看到牌面。现在开始猜牌。', 'prompt', 'strategy')
+        else:
+            self.state['phase'] = 'registration_capture'
+            self.capture('registration')
         response = {'state': self.public()}
         self.creates[key] = (copy.deepcopy(body), copy.deepcopy(response))
         return response, False
@@ -92,7 +97,7 @@ class GameCoordinator(Coordinator):
         return [n for n in range(1, 11) if sum(truth(n, q) != q['answer'] for q in self.state['history']) <= 1]
 
     def apply_result(self, cmd, r):
-        if self.state['mode'] != 'player_hides':
+        if self.state['mode'] != 'player_hides' and cmd['command_type'] not in ('vision.capture','registration.confirm'):
             return super().apply_result(cmd, r)
         kind = cmd['command_type']
         if kind == 'speech.say':
@@ -114,8 +119,8 @@ class GameCoordinator(Coordinator):
             else:
                 self.secret = c['value']
                 self.candidate = None
-                self.state.update(pending=None, phase='waiting_strategy')
-                self.say('私密登记完成。', 'prompt', 'strategy')
+                self.state.update(pending=None, phase='waiting_question')
+                self.say('我已经记住卡牌，请收好牌，现在可以提问。', 'prompt', 'listen')
         elif kind == 'strategy.decide':
             self.guess_result(r)
         elif kind == 'speech.listen':
@@ -232,13 +237,8 @@ class GameCoordinator(Coordinator):
                 self.verify_reveal(p['number'])
 
     def verify_reveal(self, value):
-        if value != self.secret:
-            self.mismatch_count += 1
-            if self.mismatch_count < 2:
-                self.capture('reveal')
-            else:
-                self.finish('invalid','REVEAL_MISMATCH',None)
-            return
+        # First knowledge of the player's card: only after final guess is locked.
+        self.secret = value
         lies = []
         for i, q in enumerate(self.state['history'],1):
             truth = {'gt':value>q['number'],'lt':value<q['number'],'eq':value==q['number']}[q['comparison']]
@@ -251,7 +251,7 @@ class GameCoordinator(Coordinator):
             self.finish('guesser_win' if win else 'hider_win','CORRECT_GUESS' if win else 'WRONG_GUESS',value)
 
     def control(self, action):
-        if not self.state or self.state['mode'] != 'player_hides' or action != 'resume':
+        if not self.state or action != 'resume':
             return super().control(action)
         if not self.state['paused']:
             raise ProtocolError(409,'INVALID_PHASE')
@@ -272,7 +272,13 @@ class GameCoordinator(Coordinator):
 
     def finish(self, outcome, reason, number):
         # Exit before registration has no truth value and must not reveal anything.
-        super().finish(outcome, reason, number)
+        original = self.secret
+        if original is None:
+            self.secret = 0  # no reveal: public audit fields remain null
+        try:
+            super().finish(outcome, reason, number)
+        finally:
+            self.secret = original
 
     def upload_evidence(self, role, body, key):
         if role != 'B':raise ProtocolError(403,'FORBIDDEN')

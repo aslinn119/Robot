@@ -10,8 +10,9 @@ import test_network_player as fixtures
 class DIntegrationTests(unittest.TestCase):
     def test_all_real_strategy_paths_through_c(self):
         paths=[]
+        gid='00000000000000000000000000000000'
         def walk(history):
-            result=suggest(history,7-len(history))
+            result=suggest(history,7-len(history),game_id=gid)
             if result['status']=='certain':
                 secret=result['proposal']['number']
                 paths.append((secret,history))
@@ -26,16 +27,16 @@ class DIntegrationTests(unittest.TestCase):
                     if errors<=1:possible.append(n)
                 if possible:walk(next_history)
         walk([])
-        self.assertEqual(len(paths),56)
+        self.assertEqual(len(paths),58)
         maximum=0
         for secret,history in paths:
             with self.subTest(secret=secret,history=history):
                 f=fixtures.PlayerNetworkTests('runTest')
                 f.setUp()
                 try:
-                    f.capture(secret)
-                    cmd=f.take('B')
-                    f.done(cmd,dict(candidate_id=cmd['payload']['candidate_id'],candidate_version=cmd['payload']['candidate_version'],confirmed=True))
+                    f.c.state['game_id']=gid
+                    for task in f.c.tasks.values():
+                        task['command']['game_id']=gid
                     f.prompt()
                     for expected in history:
                         cmd=f.take('D','strategy')
@@ -62,7 +63,7 @@ class DIntegrationTests(unittest.TestCase):
             for seed in range(16):
                 used=False
                 for ordinal in range(1,8):
-                    payload=dict(purpose='answer_question',secret=secret,question=dict(comparison='gt',number=5),lie_used=used,decision_seed=seed,question_ordinal=ordinal)
+                    payload=dict(purpose='answer_question',mode='robot_hides',max_lies=1,secret=secret,question=dict(comparison='gt',number=5),lie_used=used,decision_seed=seed,question_ordinal=ordinal)
                     result=decide(payload)
                     self.assertEqual(result,decide(payload))
                     if result['lie_applied']:
@@ -70,10 +71,16 @@ class DIntegrationTests(unittest.TestCase):
                         used=True
                     self.assertEqual(result['answer']!=(secret>5),result['lie_applied'])
 
-    def test_insufficient_strategy_does_not_invent_guess(self):
+    def test_exhaustion_returns_explicit_guess(self):
         history=[dict(question_id='test',comparison='gt',number=10,answer=False)]*7
-        with self.assertRaises(StrategyUnavailable):
-            decide(dict(purpose='guess_next',history=history,remaining_questions=0))
+        result=decide(dict(purpose='guess_next',mode='player_hides',history=history,remaining_questions=0,max_lies=1))
+        self.assertEqual(result['decision'],'final_submit')
+        self.assertEqual(result['certainty'],'guess')
+        self.assertIn(result['number'],result['candidates'])
 
+    def test_same_game_profile_retries_are_stable(self):
+        p=dict(purpose='guess_next',mode='player_hides',history=[],remaining_questions=7,max_lies=1)
+        for style in ('mixed','balanced','edge'):
+            self.assertEqual(decide(p,game_id='stable',profile=([],style)),decide(p,game_id='stable',profile=([],style)))
 
 if __name__=='__main__':unittest.main()

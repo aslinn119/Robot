@@ -1,3 +1,5 @@
+> **2026-11-26 规则更新：机器人猜牌开局不看牌，最终猜测锁定后才揭牌；玩家猜牌开局让机器人识牌记忆。详见 CARD_GAME_RULES.md。字段不变，旧版开局私密登记流程不再适用于 player_hides。**
+
 # Roban 多轮猜牌机器人统一接口规范
 
 **版本 1.0 · 执行规范 · 2026-11-26**
@@ -500,28 +502,24 @@ outcome 为 guesser_win/hider_win/invalid/exited/interrupted；玩家猜错为 h
 
 ## 11 两种玩法完整时序
 
-### 11.1 机器人藏牌
+### 11.1 玩家猜牌（robot_hides）
 
-1. C 创建 robot_hides，生成 1～10 秘密数字及 decision_seed，二者仅存私密区。
-2. C 派 A speech.say 说明规则；播报成功后派 speech.listen。
-3. A 返回 question；C 建立 pending、发复述并开绑定 pending 的确认窗口。
-4. A confirm 后 C 锁定问题，发 D strategy.decide/answer_question。
-5. D 建议通过核验后，C 一次提交 history、剩余次数、lie_used 和 answer_id。
-6. C 发 A speech.say 播答案；A started 后 C 发 D 对应 nod/shake。声音成功后再开放下一输入窗口，动作失败单独记录。
-7. 玩家 final_submit 经复述确认后锁定，C 直接比较秘密数字给出结果并播报。此玩法不要求 B 揭牌。
-8. 语音重播只使用已提交文本和答案，不重新调用 D。
+1. 玩家将牌背朝自己、牌面朝机器人，C 发 B vision.capture/registration。
+2. B 上传证据并返回候选，C 发 registration.confirm；确认后机器人记住实际牌值。此前不开放提问，不以随机数作为正式牌值。
+3. A 只播报已记住，不读出牌值，之后开放玩家 question 窗口。
+4. 问题复述确认后，D answer_question 得到机器人记住的牌值；C 核验回答及假话预算，原子记录并扣次。
+5. 玩家 final_submit 经确认后，与已记住的实际牌值比较并判定；不要求 B 再揭牌。
 
-### 11.2 玩家藏牌
+### 11.2 机器人猜牌（player_hides）
 
-1. C 创建 player_hides，必要时发 D look_at_cards；确认动作终止后发 B vision.capture/registration。
-2. B 返回候选和证据，C 发 B registration.confirm；藏牌玩家在私密界面确认后 C 锁定数字。A 只播“登记完成”，不播牌值。
-3. C 发 D strategy.decide/guess_next，仅传公开历史和剩余次数。
-4. D 返回 question，C 校验并锁定 question_id，发 A 播问题；播报成功后开 answer 窗口。
-5. A 返回 answer，C 复述并开确认窗口；confirm 后一次追加 history、扣次。内部可计算真假，但不得向 D 泄露。
-6. 重复 3～5。D 返回 final_submit 时，C 公开猜测并确认；确认后锁定最终答案。
-7. C 发 B vision.capture/reveal，结果由 A 公开复述确认。确认后比较登记值与揭牌值，并核验已确认回答的假话额度。
-8. 一致且假话≤1时正常判定；确认揭牌第一次不一致重新采集，第二次仍不一致记 REVEAL_MISMATCH。识牌失败不会消耗这两次“不一致”次数。
-9. 假话超过一次记 EXCESS_LIES；始终不能核验则暂停或退出为 UNVERIFIED，不自动判玩家输。
+1. 玩家藏好牌，开局不向机器人展示牌面；C 不发 B 登记任务，secret 为空。
+2. A 播报规则后，C 发 D guess_next，仅传公开历史和剩余次数。
+3. D 返回问题，C 锁定问题并由 A 播报；玩家回答经复述确认后才扣次记录。
+4. D 返回 final_submit，经 A 复述确认后锁定最终猜测。
+5. 此时才发 B vision.capture/reveal，玩家把牌面放到摄像头前。
+6. B 返回证据及牌值，A 公开复述确认；取消则重新采集，不判胜负。
+7. 确认后以揭牌为真实牌值，核验历史中假话次数，再判猜中或猜错；假话超过一次为 EXCESS_LIES。
+8. 不再比较开局登记值与揭牌值。没有有效揭牌则不自动判胜负。软件不能独立证明玩家未换牌。
 
 ## 12 暂停、取消、重发与恢复
 

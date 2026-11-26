@@ -10,6 +10,8 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'src'))
 from network_v1.d_strategy_adapter import decide
+from vendor_d.team_strategy import replay_profile
+from vendor_d.strategy import opening_questions
 
 
 def main():
@@ -35,6 +37,7 @@ def main():
         return request('/api/v1/events',body)
     print('D strategy client ready; no motion execution.')
     last_heartbeat=0
+    profiles={}
     try:
         while True:
             if time.monotonic()-last_heartbeat>=2:
@@ -47,7 +50,23 @@ def main():
             event('task.accepted',{},cmd)
             event('task.started',{},cmd)
             try:
-                result=decide(cmd['payload'])
+                gid=cmd['game_id']
+                if gid not in profiles:
+                    summaries=request('/api/v1/games?limit=20')['games']
+                    finished=[]
+                    for row in reversed(summaries):
+                        if row['phase']!='finished' or row['game_id']==gid:
+                            continue
+                        game=request('/api/v1/games/'+row['game_id']+'/public')['state']
+                        if game.get('result',{}).get('outcome') not in ('guesser_win','hider_win'):
+                            continue
+                        if game['mode']=='player_hides' and game['history']:
+                            first=game['history'][0]
+                            if (first['comparison'],first['number']) not in opening_questions():
+                                continue
+                        finished.append(game)
+                    profiles[gid]=replay_profile(finished)
+                result=decide(cmd['payload'],game_id=gid,profile=profiles[gid])
                 payload=dict(status='success',result=result,error=None)
             except (ValueError,KeyError,TypeError) as error:
                 payload=dict(status='failed',result=None,error=dict(code='STRATEGY_UNAVAILABLE',message=str(error)))

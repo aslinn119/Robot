@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/aslinn119/Robot.git",
+  "revision": "5a8583046420d8696faceff1390ce16ff53a07c5",
+  "files": {
+    "strategy.py": "ff3c604a27645206ddd6b1bb3648725936d4875a20522d4bd2d974e76265ea7a",
+    "hide_plan.py": "fe8452a55b60d0ca927617d08725e4636904ecf2c0765a7f7204ba2b35bc61b8",
+    "team_strategy.py": "77241d2c7d4c0392c881c4e71f32fb930c62d20ceb4520f753be9372759d4841"
+  }
+}
