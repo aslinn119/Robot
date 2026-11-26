@@ -14,9 +14,29 @@
 本目录刻意与小组仓库 `robot_speech/` 保持同构（`src/robot_speech/` +
 `scripts/` + `tests/`），整包复制即可，无需改动目录结构。
 
-> 当前状态：离线部分已完成并通过 366 项测试；A→C 走 v1.0 的 HTTP 命令循环，
-> 已用本地假 C 服务跑通全链路。**尚未**上机、**尚未**与 C 的 8780 服务真实联调、
-> **尚未**确认播报完成信号的来源。
+> 当前状态：离线部分已完成并通过 368 项测试；A→C 走 v1.0 的 HTTP 命令循环，
+> 已用本地假 C 服务跑通全链路。**尚未**与 C 的 8780 服务真实联调、
+> **尚未**打通 IAT 出口。
+
+## 上机实测（2026-11-26 · Roban / Ubuntu 20.04 / Noetic）
+
+在实验室机器人上实测，解决了三个悬了很久的问题中的两个：
+
+| 问题 | 结论 | 依据 |
+| --- | --- | --- |
+| 播报完成信号从哪来 | **`/aiui/play_end`**（`std_msgs/Empty`，`/ros_aiui_node` 发布，原本无订阅者） | `rostopic info`；一次 `text_to_speak` 只产生一条，出现在说完之后 |
+| `text_to_speak` 是否阻塞 | **不阻塞**，约 1 秒就返回，只代表「已提交」 | `time rosservice call` → `real 0m0.990s` |
+| 识别出口是否存在 | `/aiui/iat` 与 `/aiui/nlp` **都在** | `rostopic list`（内容待验证） |
+
+`RosSpeaker` 已改为订阅 `/aiui/play_end` 判定完成，实测返回
+`PlaybackStatus.COMPLETED`、`elapsed=6.7s`，不再是 `UNVERIFIED`。
+
+服务接口细节：请求字段是 `text`（不是 `data`），响应字段是 `is_success`。
+
+> 已知边界：唤醒应答也发 `play_end`。若在它尚未播完时发起新播报，
+> 可能把它的结束信号误算成我们的。靠「上一个播报没结束就不发下一个」的半双工约束规避。
+
+---
 
 ---
 

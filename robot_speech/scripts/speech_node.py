@@ -46,7 +46,7 @@ if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
 import rospy  # noqa: E402
-from std_msgs.msg import String  # noqa: E402
+from std_msgs.msg import Empty, String  # noqa: E402
 
 from robot_speech import (  # noqa: E402
     EventLog,
@@ -76,6 +76,7 @@ class RosSpeaker:
         clock: Callable[[], float] = time.monotonic,
         log: Optional[EventLog] = None,
         wait_timeout: float = 5.0,
+        play_end_topic: str = "/aiui/play_end",
     ) -> None:
         if textToSpeak is None:
             raise RuntimeError("未找到 ros_AIUI_node.srv.textToSpeak，请在机器人上运行")
@@ -86,6 +87,17 @@ class RosSpeaker:
         self._log = log
         self._proxy = rospy.ServiceProxy(service_name, textToSpeak)
 
+        # 播报结束信号：厂商节点在 /aiui/play_end 上发 std_msgs/Empty。
+        # 2026-11-26 实测：一次 text_to_speak 调用只产生一条，且基本在说完之后出现；
+        # 该服务本身约 1 秒就返回，**不等于播完**。
+        self._play_end_topic = play_end_topic
+        self._play_end_queue: "queue.Queue[float]" = queue.Queue()
+        self._play_end_sub = None
+        if play_end_topic:
+            self._play_end_sub = rospy.Subscriber(
+                play_end_topic, Empty, self._on_play_end, queue_size=10
+            )
+
         # 启动时先等服务就位，避免第一句话直接吃一个异常。
         # 服务晚于本节点启动时只告警，不阻断（播报失败会在 speak() 里按 FAILED 处理）。
         try:
@@ -93,8 +105,39 @@ class RosSpeaker:
         except rospy.ROSException:
             rospy.logwarn("等待服务 %s 超时（%.1fs），稍后调用可能失败", service_name, wait_timeout)
 
+    # -- 播报结束信号 ------------------------------------------------------
+
+    def _on_play_end(self, _msg) -> None:
+        self._play_end_queue.put(self._clock())
+
+    def _drain_play_end(self) -> None:
+        while True:
+            try:
+                self._play_end_queue.get_nowait()
+            except queue.Empty:
+                return
+
+    def _playback_deadline(self, text: str) -> float:
+        """按字数估一个上限；固定 8 秒会让长句一定误判超时。"""
+        estimate = 3.0 + 0.35 * len(text)
+        return max(self._timeout, min(15.0, estimate))
+
+    def _wait_play_end(self, timeout: float) -> Optional[float]:
+        deadline = self._clock() + timeout
+        while True:
+            remaining = deadline - self._clock()
+            if remaining <= 0:
+                return None
+            try:
+                return self._play_end_queue.get(timeout=min(remaining, 0.5))
+            except queue.Empty:
+                continue
+
     def speak(self, text: str) -> PlaybackResult:
         started = self._clock()
+
+        # 先清掉上一次播报残留的结束信号，避免张冠李戴
+        self._drain_play_end()
 
         try:
             response = self._proxy(text)
@@ -144,10 +187,37 @@ class RosSpeaker:
                 detail="is_success_false",
             )
 
+        if self._probe is None and self._play_end_topic:
+            # 靠厂商的 /aiui/play_end 判定：实测一次播报一条、且在说完之后
+            finished_at = self._wait_play_end(self._playback_deadline(text))
+            if finished_at is None:
+                if self._log is not None:
+                    self._log.emit(
+                        "tts.play_end",
+                        result="timeout",
+                        data={"timeout": self._playback_deadline(text)},
+                    )
+                return PlaybackResult(
+                    status=PlaybackStatus.TIMEOUT,
+                    text=text,
+                    elapsed=self._clock() - started,
+                    detail="play_end_timeout",
+                )
+            playback_elapsed = finished_at - started
+            if self._log is not None:
+                self._log.emit(
+                    "tts.play_end",
+                    result="completed",
+                    data={"topic": self._play_end_topic, "elapsed": round(playback_elapsed, 3)},
+                )
+            return PlaybackResult(
+                status=PlaybackStatus.COMPLETED,
+                text=text,
+                elapsed=playback_elapsed,
+                detail="play_end",
+            )
+
         if self._probe is None:
-            # TODO(上机): 确认完成信号从哪来。
-            # 候选：订阅某个播放状态话题、读 Player.is_playing（在 AIui_node 进程内，
-            # 外部拿不到）、或自行统计 PCM 时长 + 余量。
             rospy.logwarn_throttle(
                 5.0,
                 "播报完成信号未知：已提交请求，按 UNVERIFIED 处理（%r）",
