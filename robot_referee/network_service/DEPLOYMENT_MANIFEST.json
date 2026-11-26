@@ -1,0 +1,27 @@
+{
+  "source": "C referee project + unchanged D strategy snapshot",
+  "files": {
+    "src/network_v1/coordinator.py": "f96c4d99500a53f638fc930542dd6e56ba3ccf2add1020a777f30359cab2395d",
+    "src/network_v1/durable.py": "6b52e86f917c0d182a86b8a567da3c2baa5e771e2949b7e43532ebd844af1a53",
+    "src/network_v1/d_strategy_adapter.py": "f475e5ee8a0e9dfe0a9a7005c0450397123653253fda19b335dae4d1f777fdde",
+    "src/network_v1/player.py": "96d5bdab8c0f4d14ed2a1507dc012ea08d891b32fd8bfc55e49f7dcaf7f0534a",
+    "src/network_v1/transport.py": "1734a29a588af8965d41751d1782d00e397036d4bf6ba780b846f2b844de5657",
+    "src/network_v1/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/vendor_d/strategy.py": "22e93ace76cfdcb1e5741e9f9305843d7fdb05f0c1e24567870e276d6c2419b8",
+    "src/vendor_d/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tests/test_network_foundation.py": "81f92c1fcffbff913d40c36b0190cd779d8578773998fb6629d3f898fa6c1b50",
+    "tests/test_network_game.py": "ca6744773cab4363c52ee1dfa9c545eaa4759d680ec109dbf7ded3de5b6b38e0",
+    "tests/test_network_durable.py": "e98bd04c21a6f92451f823e5175f8db2525b939921456c6bab770c382f93b745",
+    "tests/test_network_player.py": "80a4a23644be24f69a06e9af90112397bcb1b71cdeb82cebdf3d1f74d48a8321",
+    "tests/test_d_integration.py": "2ba5fa94553bfaf5cb8bd571063dc5d81aff2a111b326aac125ba5f99fd2e943",
+    "tools/run_referee_server.py": "1a6f5091f080e14bf8a126cb40b823c8c6f465541199cbbca2c13efe938f3639",
+    "tools/run_d_strategy_client.py": "bb31d6ed52a29bb6eef5a60884b1018ddf069e288df7058b62974f271d2907f7",
+    "tools/run_d_integration.py": "c011c9057edeca0ffba8900d6e26a8dbe91e967d94db79dadceb50ae8486044e",
+    "tools/run_tests.py": "98b63f7558e109d784cb3e24dbe2936868a6f5e61252bbca709c6594636652fe",
+    "README.md": "5061cb23b24d0b122490c55eda844379fd7bc127b33d846cbf51fa6e6a186fd4",
+    "docs/HTTP_INTERFACE_V1.md": "639e60d00fca47b45ce08aebaff5689fae2f440339ab9bd359a39b071b144955",
+    "docs/D_STRATEGY_INTEGRATION.md": "52f1511ef2cf29485616bd5bb1e1e898ae0c472bf081f3080853ad3617e8544b",
+    "requirements.txt": "b9ec8e56e6dc745a236f5d815473490fc542ef0628375aafb93a7794d5107ec4",
+    ".gitignore": "7889aec416c57e7f75ca1dbf666c7c9312483079340261a68dd310460b2d371b"
+  }
+}

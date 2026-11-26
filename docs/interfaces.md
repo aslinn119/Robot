@@ -1,3 +1,5 @@
+> 当前 HTTP v1.0 规范与可调用实现： [robot_referee/network_service](../robot_referee/network_service/README.md)。以下为早期接口草案，HTTP 对接请以正式规范为准。
+
 # 接口草案（尚未冻结）
 
 依据项目方案整理语义，尚未决定 ROS 通信类型、话题名及字段类型；不要把草案当成已经实现的接口。
