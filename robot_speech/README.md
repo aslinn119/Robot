@@ -1,13 +1,22 @@
-# robot_speech — A 模块（语音交互）阶段一
+# robot_speech — A 模块（语音交互）
 
 纯 Python 的离线中文意图解析 + AIUI IAT 结果组装。
-**不依赖 ROS**，可在 Windows 上独立运行和测试；ROS 接入留到阶段二。
+**不依赖 ROS**，可在 Windows 上独立运行和测试；ROS 接入留到上机阶段。
+
+> **协议版本：TEAM_INTERFACE v1.0（2026-11-26）**
+> 现行 A→C 链路是 **HTTP 拉命令**（`http_client.py`）→ 命令循环（`command_agent.py`）
+> → 两条命令处理器（`speech_commands.py`），协议正本见仓库根目录 `TEAM_INTERFACE.md`。
+>
+> 下面 §10 之后描述的是 **v0.2 的进程内编排**（`session.py` / `referee_client.py` /
+> `referee_protocol.py`）。那三个模块**已废弃但保留**，只为对照历史设计；
+> 新入口 `scripts/speech_agent.py` **不导入它们**。看代码时请以 v1.0 那三个文件为准。
 
 本目录刻意与小组仓库 `robot_speech/` 保持同构（`src/robot_speech/` +
-`scripts/` + `tests/`），阶段一验收后整包复制即可，无需改动目录结构。
+`scripts/` + `tests/`），整包复制即可，无需改动目录结构。
 
-> 当前状态：阶段一（独立原型）离线部分已完成并通过测试。
-> **尚未**接入机器人、**尚未**打通 IAT、**尚未**与 C 裁判真实联调。
+> 当前状态：离线部分已完成并通过 366 项测试；A→C 走 v1.0 的 HTTP 命令循环，
+> 已用本地假 C 服务跑通全链路。**尚未**上机、**尚未**与 C 的 8780 服务真实联调、
+> **尚未**确认播报完成信号的来源。
 
 ---
 
