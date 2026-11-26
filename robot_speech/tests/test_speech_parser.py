@@ -326,6 +326,30 @@ def test_extract_numbers(text, values):
     assert [token.value for token in extract_numbers(text)] == values
 
 
+@pytest.mark.parametrize(
+    "text, intent",
+    [
+        ("再说一遍", Intent.REPEAT_LAST),
+        ("再说一次", Intent.REPEAT_LAST),
+        ("没听清", Intent.REPEAT_LAST),
+        ("帮助", Intent.HELP),
+        ("怎么玩", Intent.HELP),
+        ("规则", Intent.HELP),
+        # 这两类本来就是问句，带问号不能被当成「不该有的疑问语气」
+        ("怎么玩？", Intent.HELP),
+        ("再说一遍？", Intent.REPEAT_LAST),
+    ],
+)
+def test_repeat_and_help_intents(text, intent):
+    result = parse(text)
+    assert result.accepted, f"{text!r} 应被接受，实际 {result}"
+    assert result.intent is intent
+
+
+def test_confirm_with_question_mark_still_rejected():
+    assert parse("确认？").reason is RejectReason.UNEXPECTED_QUESTION
+
+
 # ---------------------------------------------------------------------------
 # 对外接口结构与不变量
 # ---------------------------------------------------------------------------

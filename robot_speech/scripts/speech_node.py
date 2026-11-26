@@ -242,6 +242,31 @@ class RosInput:
         # 关键：在回调里就把到达时刻和当时的窗口一起记下来
         self._queue.put((msg.data, self._clock(), self._provider()))
 
+    def poll(self, timeout: float = 0.3) -> Optional[Utterance]:
+        """带超时取一条语音；超时返回 None。
+
+        `stream()` 在没有消息时不会返回，直接 next() 会永久阻塞，
+        既等不到 `max_listen_ms` 也查不了取消。`speech.listen` 用这个方法。
+        """
+        try:
+            text, arrived_at, window_key = self._queue.get(timeout=timeout)
+        except queue.Empty:
+            return None
+        if not text:
+            return None
+        self._sequence += 1
+        return Utterance(
+            text=text,
+            window_key=window_key,
+            sequence=self._sequence,
+            window_source=self._attribution,
+            captured_at=arrived_at,
+        )
+
+    @property
+    def drain_before_listen(self) -> bool:
+        return self._drain
+
     def drain(self) -> int:
         """清空积压，返回丢弃的条数。"""
         dropped = 0

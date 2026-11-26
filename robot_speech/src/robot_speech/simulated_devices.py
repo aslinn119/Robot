@@ -84,6 +84,8 @@ class ScriptedInput:
 
     def __init__(self, items: Iterable[Any]) -> None:
         self._items = list(items)
+        self._pending: Optional[Iterator[Any]] = None
+        self._poll_index = 0
 
     def stream(self) -> Iterator[Utterance]:
         for index, item in enumerate(self._items, start=1):
@@ -98,6 +100,18 @@ class ScriptedInput:
 
     def __iter__(self) -> Iterator[Utterance]:
         return self.stream()
+
+    def poll(self, timeout: float = 0.0) -> Optional[Utterance]:
+        """非阻塞取一条（端口可选方法，供带超时的收音使用）。"""
+        if self._poll_index >= len(self._items):
+            return None
+        item = self._items[self._poll_index]
+        self._poll_index += 1
+        if callable(item):
+            item = item()
+        if isinstance(item, Utterance):
+            return replace(item, sequence=item.sequence or self._poll_index)
+        return Utterance(text=str(item), sequence=self._poll_index)
 
 
 __all__ = ["ScriptedInput", "SimulatedSpeaker"]

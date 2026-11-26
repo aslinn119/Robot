@@ -122,6 +122,8 @@ _AFFIRM_WORDS = frozenset(
     {"是", "是的", "对", "对的", "嗯", "好", "好的", "可以", "行", "没错", "正确", "没有问题"}
 )
 _DENY_WORDS = frozenset({"不是", "不对", "不", "否", "没有", "不好", "不确认", "否认"})
+_REPEAT_WORDS = frozenset({"再说一遍", "再说一次", "再说下", "重说", "重复", "重读", "没听清", "听不清"})
+_HELP_WORDS = frozenset({"帮助", "怎么玩", "规则", "说明", "不会玩", "怎么用", "帮我", "提示"})
 
 # 整句匹配顺序即优先级；同一句话只会命中一张表（词表本身互不重叠）
 _CONTROL_TABLE = (
@@ -130,6 +132,8 @@ _CONTROL_TABLE = (
     (Intent.EXIT, _EXIT_WORDS),
     (Intent.PAUSE, _PAUSE_WORDS),
     (Intent.RESUME, _RESUME_WORDS),
+    (Intent.REPEAT_LAST, _REPEAT_WORDS),
+    (Intent.HELP, _HELP_WORDS),
     (Intent.AFFIRM, _AFFIRM_WORDS),
     (Intent.DENY, _DENY_WORDS),
 )
@@ -327,8 +331,8 @@ def parse(text: object) -> ParseResult:
     # 4) 控制类整句匹配（必须先于数字抽取：「等一下」「先停一下」里含中文数字）
     control_intent = _lookup_control_word(normalized)
     if control_intent is not None:
-        if is_question:
-            # 「确认吗」「是吗」是提问，不是执行确认；交给上层要求重新表达
+        # 「确认吗」是提问不是执行；但「怎么玩？」「再说一遍？」本来就是问句
+        if is_question and control_intent not in (Intent.HELP, Intent.REPEAT_LAST):
             return rejected(raw, RejectReason.UNEXPECTED_QUESTION, normalized)
         return accepted(control_intent, raw, normalized)
 

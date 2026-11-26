@@ -24,6 +24,27 @@ from .iat_parser import (
     build_simulated_payload,
     parse_segment,
 )
+from .command_agent import CommandAgent, CommandContext, HandlerOutcome
+from .http_client import HttpRefereeClient, RefereeHttpError
+from .speech_commands import (
+    SpeechListenHandler,
+    SpeechSayHandler,
+    build_listen_result,
+    default_handlers,
+)
+from .team_protocol import (
+    A_CAPABILITIES,
+    COMMAND_SPEECH_LISTEN,
+    COMMAND_SPEECH_SAY,
+    ENVELOPE_FIELDS,
+    LISTEN_RESULT_FIELDS,
+    PROTOCOL_VERSION,
+    ProtocolError,
+    build_heartbeat,
+    listen_result,
+    new_id,
+    validate_command,
+)
 from .eventlog import EventLog
 from .intents import (
     Intent,
@@ -74,6 +95,26 @@ __version__ = "0.1.0"
 
 __all__ = [
     "EventLog",
+    "A_CAPABILITIES",
+    "COMMAND_SPEECH_LISTEN",
+    "COMMAND_SPEECH_SAY",
+    "CommandAgent",
+    "CommandContext",
+    "ENVELOPE_FIELDS",
+    "HandlerOutcome",
+    "HttpRefereeClient",
+    "LISTEN_RESULT_FIELDS",
+    "PROTOCOL_VERSION",
+    "ProtocolError",
+    "RefereeHttpError",
+    "SpeechListenHandler",
+    "SpeechSayHandler",
+    "build_heartbeat",
+    "build_listen_result",
+    "default_handlers",
+    "listen_result",
+    "new_id",
+    "validate_command",
     "Intent",
     "Operator",
     "ParseResult",

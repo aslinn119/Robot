@@ -29,6 +29,8 @@ class Intent(str, Enum):
     PAUSE = "PAUSE"      # 暂停
     RESUME = "RESUME"    # 继续
     EXIT = "EXIT"        # 主动退出本局（需二次确认，由裁判侧执行）
+    REPEAT_LAST = "REPEAT_LAST"  # 再说一遍（TEAM_INTERFACE v1.0 的 repeat_last）
+    HELP = "HELP"        # 求助 / 问规则（TEAM_INTERFACE v1.0 的 help）
     UNKNOWN = "UNKNOWN"  # 拒绝解析
 
 
