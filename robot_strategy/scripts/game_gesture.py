@@ -16,7 +16,7 @@ EXPRESSIONS = {
     'bow_lean': ('bow', 5900, '浅屈膝、髋部前倾试验'),
     'bow_deeper': ('bow', 9100, '保留上一版手臂姿态，加深俯身'),
     'bow_trial': ('bow', 8300, '胸前收手后俯身行礼'),
-    'lose': ('bow', 7000, '输局后向玩家鞠躬致意'),
+    'lose': ('bow', 4100, '败局使用手摆示教鞠躬'),
 }
 DEMO_SHA256 = '2904b20f36859847d0b2a0a65a68fbf1aebab4ace4f87f0ed13514aaeda02d5b'
 
@@ -37,6 +37,8 @@ def expression_plan(action, source_dir, run=False):
                   and any(isinstance(t, ast.Name) and t.id == preset for t in n.targets))
     if not frames or any(len(f) != 3 or len(f[0]) != 22 for f in frames):
         raise ValueError('DemoFrame 格式与全身动作入口不匹配')
+    if action == 'lose':
+        action = 'bow_taught'
     if action in ('bow_trial', 'bow_deeper', 'bow_lean', 'bow_brisk', 'bow_taught'):
         def last_pose(name):
             assignment = next(n for n in cls.body if isinstance(n, ast.Assign)
