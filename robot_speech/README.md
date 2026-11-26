@@ -7,9 +7,10 @@
 > 现行 A→C 链路是 **HTTP 拉命令**（`http_client.py`）→ 命令循环（`command_agent.py`）
 > → 两条命令处理器（`speech_commands.py`），协议正本见仓库根目录 `TEAM_INTERFACE.md`。
 >
-> 下面 §10 之后描述的是 **v0.2 的进程内编排**（`session.py` / `referee_client.py` /
-> `referee_protocol.py`）。那三个模块**已废弃但保留**，只为对照历史设计；
-> 新入口 `scripts/speech_agent.py` **不导入它们**。看代码时请以 v1.0 那三个文件为准。
+> **v0.2 的进程内编排已移除**（`session.py` / `referee_client.py` / `referee_protocol.py`
+> 及对应测试、`check_c_interface.py`、`dialogue_demo.py`、`referee_demo.py`）。
+> 它们按「A 自己提议、自己开确认窗口」的旧协议编写，v1.0 把编排权交给 C 之后已无用途。
+> 下面 §10 之后仍有部分段落描述那套流程，**仅作历史对照**，不要照着写代码。
 
 本目录刻意与小组仓库 `robot_speech/` 保持同构（`src/robot_speech/` +
 `scripts/` + `tests/`），整包复制即可，无需改动目录结构。

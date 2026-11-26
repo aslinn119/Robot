@@ -1,31 +1,31 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""A 模块的 ROS 入口（**薄壳**）。
+"""A 模块的 **ROS 适配层**（不是可执行入口）。
 
-本文件只做「设备 ↔ 端口」的接线，不含业务逻辑：
+只做「设备 ↔ 端口」的接线，不含业务逻辑，也不自己编排流程：
 
-- 流程编排：`robot_speech.session.GameSession`
-- 文本解析：`robot_speech.speech_parser`
-- A→C 事件：`robot_speech.referee_client`
+- `RosSpeaker`：`/aiui/text_to_speak` + `/aiui/play_end` → `SpeechOutput`
+- `RosInput`：`/aiui/nlp` → `SpeechInput`
 
-上机当天需要在这里改/确认三处，代码里都标了 `TODO(上机)`：
+可执行入口是 `scripts/speech_agent.py`（TEAM_INTERFACE v1.0 的命令循环），
+它从本文件导入这两个适配器。
 
-1. **播报完成信号**——`RosSpeaker.completion_probe`
-   `/aiui/text_to_speak` 返回 True 只表示请求已提交，不等于播完。
-   目前没有完成信号时返回 `UNVERIFIED`：流程继续，但日志会标出来。
-2. **识别结果出口**——`RosInput`
-   当前只能订阅已有的 `/aiui/nlp`（语义结果，**不是**自由听写）。
-   真正的 IAT 出口尚未确认。
-3. **A↔C 传输**——`build_referee()`
-   小组自定义话题/服务名尚未冻结，这里故意留成未实现。
+> 上机实测（2026-11-26）：
+> - 播报完成信号 = `/aiui/play_end`（`std_msgs/Empty`，一播一条，说完才发），
+>   实测 `speak()` 返回 `COMPLETED`、`elapsed=6.7s`；
+> - `/aiui/text_to_speak` 约 1 秒返回，请求字段 `text`，响应 `is_success`，
+>   返回成功**不等于**播完；
+> - `/aiui/nlp` 能出**自由语音**（实测「大于五吗」原样返回）；
+> - `/aiui/iat` 的 publisher 建了但代码里没有 publish 调用，**永远无输出**。
 
-已知可用的设备接口（来自 `A_speech/aiui_reference/` 源码）：
+已知可用的设备接口（来自 `A_speech/aiui_reference/` 源码 + 实测）：
 
 | 类型 | 名称 | 说明 |
 | --- | --- | --- |
-| 服务 | `/aiui/text_to_speak` | `text: String`，返回成功≠播完 |
+| 服务 | `/aiui/text_to_speak` | `text: String` → `is_success`，返回成功≠播完 |
+| 话题 | `/aiui/play_end` | `std_msgs/Empty`，播报结束 |
+| 话题 | `/aiui/nlp` | `std_msgs/String`，自由语音的识别文本 |
 | 服务 | `/aiui/direct_control` | 把文本当 NLP 结果，调试用 |
-| 话题 | `/aiui/nlp` | `std_msgs/String` 语义结果 |
 | 话题 | `/micarrays/wakeup` | 唤醒事件 |
 """
 
@@ -50,10 +50,8 @@ from std_msgs.msg import Empty, String  # noqa: E402
 
 from robot_speech import (  # noqa: E402
     EventLog,
-    GameSession,
     PlaybackResult,
     PlaybackStatus,
-    SpeechRefereeClient,
     Utterance,
     WindowAttribution,
 )
@@ -379,131 +377,3 @@ class RosInput:
                 captured_at=arrived_at,
             )
 
-
-def build_referee(module: str = "", path: str = ""):
-    """构造 A→C 的传输层。
-
-    今天（v0.2）C 只提供**本地 Python 接口**：`referee_client` 接受任何有
-    `handle(event)` 与 `public_state()` 的对象，所以直接把 `RefereeService()` 传进来即可。
-
-    参数（ROS 参数服务器）：
-
-        ~referee_module  例如 event_service        （空 = 未接，抛错退出）
-        ~referee_path    可选，C 的包目录
-
-    等全组把 A↔C 的 ROS 话题/服务冻结后，在这里换成 service 客户端即可，
-    `GameSession` 一行都不用改。
-    """
-    if not module:
-        raise NotImplementedError(
-            "A→C 传输层未配置：用 ~referee_module:=event_service 指定 C 的模块；"
-            "若 C 的代码不在 PYTHONPATH 里，再给 ~referee_path:=<包目录>。"
-            "离线验证请用 tests/support/fake_referee.py。"
-        )
-
-    if path:
-        resolved = os.path.abspath(os.path.expanduser(path))
-        if resolved not in sys.path:
-            sys.path.insert(0, resolved)
-
-    try:
-        imported = __import__(module, fromlist=["RefereeService"])
-    except ImportError as exc:
-        raise NotImplementedError(f"无法导入 {module}（是否漏了 ~referee_path？）: {exc}") from exc
-
-    factory = getattr(imported, "RefereeService", None)
-    if factory is None:
-        raise NotImplementedError(f"{module} 里没有 RefereeService")
-
-    referee = factory()
-    rospy.loginfo("已接入 C 的裁判实现：%s.%s", module, "RefereeService")
-    return referee
-
-
-class _SessionHolder:
-    """让输入端能拿到「当前窗口 key」。"""
-
-    def __init__(self) -> None:
-        self.session: Optional[GameSession] = None
-
-    def window_key(self) -> Optional[str]:
-        return self.session.window_key if self.session is not None else None
-
-
-def main() -> int:
-    rospy.init_node("robot_speech_node", anonymous=False)
-
-    try:
-        referee = build_referee(
-            module=str(rospy.get_param("~referee_module", "")),
-            path=str(rospy.get_param("~referee_path", "")),
-        )
-    except NotImplementedError as exc:
-        rospy.logerr("%s", exc)
-        return 2
-
-    game_id = rospy.get_param("~game_id", "")
-    if not game_id:
-        rospy.logerr("缺少参数 ~game_id")
-        return 2
-
-    # 日志：每次启动一个文件 + 唯一会话 ID，避免多次试跑的 seq 混在一起
-    run_id = rospy.get_param("~run_id", "") or time.strftime("%Y%m%d-%H%M%S")
-    default_path = os.path.expanduser(f"~/.ros/robot_speech/{run_id}.jsonl")
-    log_path = rospy.get_param("~log_path", "") or default_path
-    log_raw = bool(rospy.get_param("~log_raw_text", False))
-    os.makedirs(os.path.dirname(os.path.abspath(log_path)), exist_ok=True)
-    log_stream = open(log_path, "a", encoding="utf-8")
-    log = EventLog(log_stream, session=f"robot-{run_id}", include_text=log_raw)
-    rospy.loginfo("事件日志: %s（会话 %s，原始文本 %s）", log_path, f"robot-{run_id}",
-                  "开" if log_raw else "关")
-
-    speaker = RosSpeaker(
-        service_name=rospy.get_param("~tts_service", "/aiui/text_to_speak"),
-        timeout=rospy.get_param("~speak_timeout", 8.0),
-        log=log,
-    )
-
-    holder = _SessionHolder()
-    input_source = RosInput(
-        holder.window_key,
-        topic=rospy.get_param("~nlp_topic", "/aiui/nlp"),
-        drain_before_listen=rospy.get_param("~drain_before_listen", True),
-        log=log,
-    )
-
-    client = SpeechRefereeClient(referee, game_id)
-    session = GameSession(
-        client,
-        input_source,
-        speaker,
-        log=log,
-        # 默认关闭：必须观察到播完才开窗。上机诊断时才临时打开。
-        allow_unverified_playback=bool(rospy.get_param("~allow_unverified_playback", False)),
-    )
-    holder.session = session
-
-    def _shutdown() -> None:
-        rospy.loginfo("robot_speech_node 关闭")
-
-    rospy.on_shutdown(_shutdown)
-
-    # 放 worker 线程：rospy 回调里不能长时间阻塞
-    def _run() -> None:
-        report = session.run()
-        rospy.loginfo("对话结束，共 %d 轮: %s", len(report), report.statuses)
-
-    worker = threading.Thread(target=_run, name="speech-session", daemon=True)
-    worker.start()
-
-    try:
-        rospy.spin()
-    finally:
-        # 退出时补一条收尾记录并关文件（EventLog 每行都 flush，这里主要是把句柄关干净）
-        log.emit("session.end", data={"reason": "shutdown"})
-        log.close()
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
