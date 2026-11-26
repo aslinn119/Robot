@@ -61,7 +61,16 @@ class HttpRefereeClient:
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         self._base_url = base_url.rstrip("/")
-        self._token = token
+        # HTTP 头只能放 ASCII；令牌里混进中文会炸在 urllib 最深处，报 UnicodeEncodeError，
+        # 完全看不出是令牌的问题。这里提前挡住，给一句人话。
+        if not _is_ascii(token):
+            raise ProtocolError(
+                "BAD_TOKEN",
+                "令牌必须只含 ASCII 字符（是不是把说明文字或占位符当令牌填了？）",
+            )
+        self._token = token.strip()
+        if not self._token:
+            raise ProtocolError("BAD_TOKEN", "令牌为空")
         self._source = source
         self._instance_id = instance_id or new_id()
         if not is_valid_id(self._instance_id):
@@ -203,6 +212,10 @@ class HttpRefereeClient:
         if isinstance(value, (int, float)):
             return float(value)
         return None
+
+
+def _is_ascii(value: str) -> bool:
+    return isinstance(value, str) and all(ord(ch) < 128 for ch in value)
 
 
 def _retry_after_header(headers: Mapping[str, str]) -> Optional[float]:

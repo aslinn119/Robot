@@ -406,6 +406,16 @@ def test_client_requires_token(referee):
     assert excinfo.value.status == 401
 
 
+@pytest.mark.parametrize("bad_token", ["把令牌填这里", "Bearer 令牌", ""])
+def test_client_rejects_unusable_token_early(bad_token):
+    """令牌里混中文或为空时，要报一句人话，不要炸在 urllib 的 latin-1 里。"""
+    from robot_speech.team_protocol import ProtocolError
+
+    with pytest.raises(ProtocolError) as excinfo:
+        HttpRefereeClient("http://127.0.0.1:1", bad_token, source="A")
+    assert excinfo.value.reason == "BAD_TOKEN"
+
+
 def test_client_pull_returns_none_when_empty(referee):
     client = HttpRefereeClient(referee.base_url, TOKEN, source="A", sleep=lambda _s: None)
     assert client.pull_command(wait_ms=0) is None
