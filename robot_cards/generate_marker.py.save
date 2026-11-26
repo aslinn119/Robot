@@ -1,0 +1,15 @@
+
+import cv2
+
+# 选择 ArUco 字典：4×4 格子，共支持 50 种不同标记
+aruco_dict = cv2.aruco.Dictionary_get(
+    cv2.aruco.DICT_4X4_50
+)
+
+# 生成编号为 0 的标记，图片尺寸为 400×400 像素
+marker = cv2.aruco.drawMarker(aruco_dict, 0, 400)
+
+# 保存到当前文件夹
+cv2.imwrite("marker_0.png", marker)
+
+print("已生成 marker_0.png，对应数字牌 1")
