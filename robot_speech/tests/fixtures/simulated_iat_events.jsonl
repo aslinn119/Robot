@@ -1,0 +1,6 @@
+{"_simulated": true, "_note": "模拟数据：非真实 IAT 样本，仅用于验证解析与拼接逻辑", "text": {"ls": false, "ws": [{"cw": [{"w": "大于"}]}]}}
+{"_simulated": true, "_note": "模拟数据：非真实 IAT 样本", "text": {"ls": false, "ws": [{"cw": [{"w": "大于"}]}, {"cw": [{"w": "五"}]}]}}
+{"_simulated": true, "_note": "模拟数据：同一片段重复推送", "text": {"ls": false, "ws": [{"cw": [{"w": "大于"}]}, {"cw": [{"w": "五"}]}]}}
+{"_simulated": true, "_note": "模拟数据：最终结果", "text": {"ls": true, "ws": [{"cw": [{"w": "大于"}]}, {"cw": [{"w": "五"}]}, {"cw": [{"w": "吗"}]}]}}
+{"_simulated": true, "_note": "模拟数据：新一句", "text": {"ls": false, "ws": [{"cw": [{"w": "是"}]}]}}
+{"_simulated": true, "_note": "模拟数据：新一句的最终结果", "text": {"ls": true, "ws": [{"cw": [{"w": "是"}]}, {"cw": [{"w": "七"}]}]}}
