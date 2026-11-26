@@ -9,17 +9,21 @@ def _check_game(game_id):
         raise ValueError("game_id must be a nonempty string")
 
 
-def make_plan(game_id, *, all_truthful=False, rng=None):
+def make_plan(game_id, *, decision_seed=None, all_truthful=False, rng=None):
     """开局调用一次。返回可随局保存的 JSON 对象。"""
     _check_game(game_id)
     if type(all_truthful) is not bool:
         raise ValueError("all_truthful must be boolean")
+    if decision_seed is not None:
+        if type(decision_seed) is not int or rng is not None:
+            raise ValueError("decision_seed 须为整数，且不能同时提供 rng")
+        rng = random.Random(decision_seed)
     source = random if rng is None else rng
     return {"game_id": game_id,
-            "lie_turn": None if all_truthful else source.randint(1, 7)}
+            "lie_turn": 0 if all_truthful else source.randint(0, 7)}
 
 
-def suggest_answer(plan, game_id, question_no, secret, kind, number):
+def suggest_answer(plan, game_id, question_no, secret, kind, number, *, lie_used=False):
     """只为已确认的普通问题提供建议。重播由 C 读取已提交答案。"""
     _check_game(game_id)
     if not isinstance(plan, dict) or set(plan) != {"game_id", "lie_turn"}:
@@ -29,6 +33,9 @@ def suggest_answer(plan, game_id, question_no, secret, kind, number):
     if type(question_no) is not int or not 1 <= question_no <= 7:
         raise ValueError("question_no must be an integer from 1 to 7")
     turn = plan["lie_turn"]
-    if turn is not None and (type(turn) is not int or not 1 <= turn <= 7):
+    if turn is not None and (type(turn) is not int or not 0 <= turn <= 7):
         raise ValueError("invalid lie_turn")
-    return answer_suggestion(secret, kind, number, use_lie=question_no == turn)
+    if type(lie_used) is not bool:
+        raise ValueError("lie_used 须为布尔值")
+    return answer_suggestion(secret, kind, number, lies_used=int(lie_used),
+                             use_lie=not lie_used and question_no == turn)
