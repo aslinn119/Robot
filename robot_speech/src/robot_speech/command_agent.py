@@ -187,6 +187,7 @@ class CommandAgent:
         self._done: set = set()
         self._active: Optional[str] = None
         self._last_heartbeat = 0.0
+        self._heartbeat_error: Optional[str] = None
         self._stop = threading.Event()
         self._heartbeat_thread: Optional[threading.Thread] = None
 
@@ -219,8 +220,10 @@ class CommandAgent:
             while not self._stop.is_set():
                 try:
                     self.post_heartbeat()
+                    self._report_heartbeat_problem(None)
                 except RefereeHttpError as exc:
                     self._emit("heartbeat", result="failed", data={"code": exc.code})
+                    self._report_heartbeat_problem(exc)
                 self._stop.wait(self._heartbeat_interval)
 
         self._heartbeat_thread = threading.Thread(target=_loop, name="heartbeat", daemon=True)
@@ -229,6 +232,29 @@ class CommandAgent:
     def stop_heartbeat(self) -> None:
         self._stop.set()
         self._heartbeat_thread = None
+
+    def _report_heartbeat_problem(self, exc: Optional[RefereeHttpError]) -> None:
+        """心跳失败时在终端留一句话。
+
+        只看 JSONL 日志的话，进程看起来「正常在跑」，其实一个命令都拉不到。
+        同一个错误只报一次，恢复时再说一句。
+        """
+        code = exc.code if exc is not None else None
+        if code == self._heartbeat_error:
+            return
+        self._heartbeat_error = code
+        if exc is None:
+            print("[A] 心跳已恢复，模块重新在线", flush=True)
+            return
+        hint = ""
+        if exc.code == "MODULE_CONFLICT":
+            hint = (
+                "（同角色已有实例注册着，通常是上次进程残留；"
+                "需要 C 重启裁判服务，本进程会自动重试，不用重启）"
+            )
+        elif exc.status == 401:
+            hint = "（令牌不是服务当前使用的那个）"
+        print(f"[A] 心跳失败 {exc.code}{hint}，继续重试", flush=True)
 
     # -- 主循环 ------------------------------------------------------------
 
