@@ -1,3 +1,5 @@
+> 2026-11-27：已补模块复位和 robot 模式准入，见 [MODULE_RESET_AND_ROBOT_MODE.md](docs/MODULE_RESET_AND_ROBOT_MODE.md)。首轮动作禁用。
+
 > 当前卡牌规则与 D 新版统一策略已更新，联调前必读 [CARD_GAME_RULES.md](docs/CARD_GAME_RULES.md)。机器人猜牌先盲猜、最后揭牌；玩家猜牌先让机器人识牌记住。旧进程需要结束旧局后重启才生效。
 
 # Roban 裁判网络服务
@@ -59,7 +61,7 @@ export ROBAN_TOKEN_D='由C单独提供的D令牌'
 
 客户端只拉取 `strategy` 队列。它调用 D 已交付的 `suggest`、`answer_suggestion` 函数。动作队列仍由 D 的动作端负责；本客户端不会点头、摇头或播放动作。
 
-同一角色只允许运行一个实例；重启客户端发生 MODULE_CONFLICT 时，不要反复改实例抢占。当前尚无模块重置接口，需要 C 停止本次模拟服务后重启；未完成局会归档为中断。
+同一角色只允许运行一个实例；重启客户端发生 MODULE_CONFLICT 时，不要反复改实例抢占。现在可由 C 操作员核对旧进程停止、设备空闲后使用 control.module_reset 单独复位；详见新说明。服务器重启仍会把未完成局归档为中断。
 
 ## A、B 调用方式
 
@@ -68,7 +70,7 @@ export ROBAN_TOKEN_D='由C单独提供的D令牌'
 - C：使用 C 令牌创建 mock 对局及管理暂停、恢复、退出。
 - D：策略脚本可直接使用；motion 队列需 D 的动作客户端另行对接。
 
-当前所有新局都必须使用 `runtime_mode: "mock"`；`robot` 会返回 503。服务不会自动执行厂商 ROS 动作。实际语音、识牌和动作仍需分别验收。
+默认只允许 mock；启动加 `--enable-robot` 后，满足能力、模式和心跳检查才允许 robot 新局。服务不会自动执行厂商 ROS 动作。实际语音、识牌和动作仍需分别验收。
 
 ## 已验证与未验证
 

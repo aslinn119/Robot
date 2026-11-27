@@ -1,11 +1,11 @@
 {
   "source": "C referee project + unchanged D strategy snapshot",
   "files": {
-    "src/network_v1/coordinator.py": "f96c4d99500a53f638fc930542dd6e56ba3ccf2add1020a777f30359cab2395d",
-    "src/network_v1/durable.py": "6b52e86f917c0d182a86b8a567da3c2baa5e771e2949b7e43532ebd844af1a53",
+    "src/network_v1/coordinator.py": "61960aae6eeb1c718cef77414927d2c03061ec79c79fae2831c4538baef90f41",
+    "src/network_v1/durable.py": "22c7d7f811097c1e56ea06be479b2175e2f3b0116a2338478f38738ccf430bb9",
     "src/network_v1/d_strategy_adapter.py": "4dd26bc18e2b6f06e54705d64117dafd779db6992a863e132c3e68e715f631d3",
     "src/network_v1/player.py": "94362ceaff8559ad556e95301c04da1ba33868ce059d03c6d4d957f3501df28c",
-    "src/network_v1/transport.py": "1734a29a588af8965d41751d1782d00e397036d4bf6ba780b846f2b844de5657",
+    "src/network_v1/transport.py": "41204a79c3ecfcedabb13d2f2b972352e4a8330b79096286d4e8bcdb469a0566",
     "src/network_v1/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "src/vendor_d/strategy.py": "ff3c604a27645206ddd6b1bb3648725936d4875a20522d4bd2d974e76265ea7a",
     "src/vendor_d/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -14,12 +14,12 @@
     "tests/test_network_durable.py": "4acb119ec0b258b27162a84801b5a6cfdea074ca7e8e417fd6f1fbcc15d434fe",
     "tests/test_network_player.py": "941477a7ce26d89de4ac4afac7b48e053c1c29b3093d00910aa5d42bd3989d7e",
     "tests/test_d_integration.py": "6a0b83010ba8d481a01ba058f8b6bf971c3e1d85400e38e711b063ed8babd6a9",
-    "tools/run_referee_server.py": "1a6f5091f080e14bf8a126cb40b823c8c6f465541199cbbca2c13efe938f3639",
+    "tools/run_referee_server.py": "68f702df054d9b3ee859ddf5eb8775bc7b82bca3e3be66b207af31c80620d55a",
     "tools/run_d_strategy_client.py": "ac9492fe10abd0c01cb19b8d47bd8d49464322e25bb720e5ad179b7dabcfe717",
     "tools/run_d_integration.py": "3a9d03524551ca0959d368b42ffa0255c189c42b419ded394b14d880be43ad0e",
     "tools/run_tests.py": "98b63f7558e109d784cb3e24dbe2936868a6f5e61252bbca709c6594636652fe",
-    "README.md": "905310665b513920dc0fb51d701851d09df4be1198cd1d2d15dd12c681c1a363",
-    "docs/HTTP_INTERFACE_V1.md": "c7f9e5e4feb41c40265a0bd27f227280b141fe6fe06cd728b1abfd1d02802481",
+    "README.md": "9525c698f799babe70e6216ed05b62c298bfad137e5e820fe9b968970dec2000",
+    "docs/HTTP_INTERFACE_V1.md": "8c28e5bc6bd82d6fee87f2788c8cce1505cbea60c1c8ea6a070feff5fde0b868",
     "docs/D_STRATEGY_INTEGRATION.md": "36a3416de2ae1420bc03902fc82991ae5f36c238df8955e6fbb2a806c6a85a05",
     "requirements.txt": "b9ec8e56e6dc745a236f5d815473490fc542ef0628375aafb93a7794d5107ec4",
     ".gitignore": "7889aec416c57e7f75ca1dbf666c7c9312483079340261a68dd310460b2d371b",
@@ -31,6 +31,10 @@
     "tests/test_vendor_d_strategy.py": "87e10cb3cb94ee5b91376457d842de85583c0e48dba09d6fbc2de63bba7f0906",
     "tests/test_vendor_d_hide_plan.py": "ea00b19e95ab6b0e2f60479d1e2f56e6f7bac062e0730d1e6db20e0ceabc16f9",
     "tests/test_vendor_d_team_strategy.py": "d8596820797c0c68edc4f413668124d733903e1c84dd965d74204f950aac4052",
-    "docs/D_STRATEGY_SOURCE.json": "b72c6a33557b06cb5f91617787490537881dcbfd5f96b0ca888ffd9d13081d25"
+    "docs/D_STRATEGY_SOURCE.json": "b72c6a33557b06cb5f91617787490537881dcbfd5f96b0ca888ffd9d13081d25",
+    "src/network_v1/managed.py": "b2bf29f34bec373b705bc0f04ef3837b240bf128a161f9d24a33c072436dde34",
+    "tests/test_managed.py": "597a4e7d6fa1be62f49f13003b119c6268e39bbc09fc1dcdd8db0e7b8b6e7290",
+    "docs/MODULE_RESET_AND_ROBOT_MODE.md": "f241e2653010408330b3e7971721b1189fe276da107a9334c7d9e42531c0db33",
+    "tools/manage_module.py": "6eeeffb24e7d4ca043eca773d5acde7616c9e95df295c6c83539f9960641f60f"
   }
 }

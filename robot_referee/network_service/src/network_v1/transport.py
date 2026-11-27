@@ -126,6 +126,8 @@ def create_server(transport,port=8780,host='127.0.0.1'):
                 if len(parts)==6 and parts[1:4]==['api','v1','games'] and parts[5]=='public' and hasattr(transport,'game_public'):
                     self.send_json(200,'OK',{'state':transport.game_public(parts[4])});return
                 role=transport.authorize(self.headers.get('Authorization',''))
+                if url.path=='/api/v1/operator/modules' and hasattr(transport,'operator_modules'):
+                    self.send_json(200,'OK',transport.operator_modules(role));return
                 if len(parts)==5 and parts[1:4]==['api','v1','evidence'] and hasattr(transport,'evidence_image'):
                     raw=transport.evidence_image(role,parts[4])
                     self.send_response(200);self.send_header('Content-Type','image/jpeg');self.send_header('Content-Length',str(len(raw)));self.send_header('Cache-Control','no-store');self.end_headers();self.wfile.write(raw);return

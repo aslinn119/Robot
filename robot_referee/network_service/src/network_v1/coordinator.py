@@ -43,7 +43,7 @@ class Coordinator(Transport):
             if self.state and self.state['phase'] != 'finished':
                 raise ProtocolError(409, 'GAME_ACTIVE')
             # Until persistent recovery is available, only simulation is enabled.
-            if body['runtime_mode'] != 'mock':
+            if body['runtime_mode'] == 'robot' and not getattr(self, 'allow_robot', False):
                 raise ProtocolError(503, 'SERVICE_UNAVAILABLE')
             from datetime import datetime
             if any(task['status'] in ('accepted', 'running') for task in self.tasks.values()):
@@ -54,7 +54,7 @@ class Coordinator(Transport):
             self.secret, self.seed = secrets.randbelow(10) + 1, secrets.randbelow(2**31)
             self.lie_used = False
             self.last_answer = None
-            self.state = dict(protocol_version='1.0', game_id=uid(), mode='robot_hides', runtime_mode='mock', phase='waiting_question', paused=False, resume_phase=None, input_epoch=0, remaining_questions=7, history=[], pending=None, locked_question=None, final_submission=None, result=None, started_at=datetime.now().astimezone().isoformat(), ended_at=None)
+            self.state = dict(protocol_version='1.0', game_id=uid(), mode='robot_hides', runtime_mode=body['runtime_mode'], phase='waiting_question', paused=False, resume_phase=None, input_epoch=0, remaining_questions=7, history=[], pending=None, locked_question=None, final_submission=None, result=None, started_at=datetime.now().astimezone().isoformat(), ended_at=None)
             self.say('请提问。最多七次提问，最后提交一个数字。', 'prompt', 'listen')
             response = {'state': self.public()}
             self.creates[key] = (copy.deepcopy(body), copy.deepcopy(response))
@@ -115,7 +115,7 @@ class Coordinator(Transport):
                         else:
                             # Fail closed: do not count, guess, or blindly retry actions.
                             self.control('pause')
-                    elif event['event_type'] == 'task.started' and cmd['command_type'] == 'speech.say' and cmd['payload']['answer_id']:
+                    elif event['event_type'] == 'task.started' and cmd['command_type'] == 'speech.say' and cmd['payload']['answer_id'] and getattr(self, 'motion_enabled', True):
                         aid = cmd['payload']['answer_id']
                         if not any(t['command']['command_type'] == 'motion.execute' and t['command']['payload']['answer_id'] == aid for t in self.tasks.values()):
                             self.command('motion.execute', dict(action='nod' if self.last_answer['answer'] else 'shake', sync_group_id=aid, reason='spoken_answer', answer_id=aid))

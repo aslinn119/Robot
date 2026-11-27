@@ -1,3 +1,5 @@
+> 2026-11-27 实现补充：模块复位的确切校验、管理查询和 robot 模式准入以 [MODULE_RESET_AND_ROBOT_MODE.md](MODULE_RESET_AND_ROBOT_MODE.md) 为准。首轮不派动作；复位不自动恢复。
+
 > **2026-11-26 规则更新：机器人猜牌开局不看牌，最终猜测锁定后才揭牌；玩家猜牌开局让机器人识牌记忆。详见 CARD_GAME_RULES.md。字段不变，旧版开局私密登记流程不再适用于 player_hides。**
 
 # Roban 多轮猜牌机器人统一接口规范

@@ -14,7 +14,7 @@ from .transport import ProtocolError
 class DurableCoordinator(Coordinator):
     FIELDS = ('tasks', 'receipts', 'modules', 'state', 'secret', 'seed',
               'lie_used', 'creates', 'after_say', 'last_answer', 'deadlines', 'archives',
-              'candidate', 'mismatch_count', 'capture_attempt', 'evidence', 'evidence_requests', 'exit_context')
+              'candidate', 'mismatch_count', 'capture_attempt', 'evidence', 'evidence_requests', 'exit_context', 'retired_instances', 'reset_audit')
 
     def __init__(self, tokens, directory, clock=time.monotonic):
         super().__init__(tokens)
@@ -23,10 +23,16 @@ class DurableCoordinator(Coordinator):
         self.clock = clock
         self.deadlines = {}
         self.archives = {}
+        self.retired_instances = {}
+        self.reset_audit = []
         if self.path.exists():
             saved = json.loads(self.path.read_text(encoding='utf-8'))
             if saved.get('format') != 1:
                 raise ValueError('Unsupported network journal format')
+            self.retired_instances = saved.get('retired_instances', {})
+            self.reset_audit = saved.get('reset_audit', [])
+            for row in saved.get('reset_receipts', []):
+                self.receipts[('C', row['request_id'])] = (row['fingerprint'], row['response'])
             self.creates = saved['creates']
             self.archives = saved['archives']
             self.evidence = saved.get('evidence', {})
@@ -61,7 +67,8 @@ class DurableCoordinator(Coordinator):
                            receipts=[dict(source=k[0], request_id=k[1], fingerprint=v[0], response=v[1])
                                      for k, v in self.receipts.items()])
         data = dict(format=1, server_instance_id=self.instance, creates=self.creates,
-                    archives=self.archives, current=current, evidence=self.evidence, evidence_requests=self.evidence_requests)
+                    archives=self.archives, current=current, evidence=self.evidence, evidence_requests=self.evidence_requests, retired_instances=self.retired_instances, reset_audit=self.reset_audit,
+                    reset_receipts=[dict(request_id=k[1],fingerprint=v[0],response=v[1]) for k,v in self.receipts.items() if k[0]=='C' and json.loads(v[0]).get('event_type')=='control.module_reset'])
         encoded = json.dumps(data, ensure_ascii=False, allow_nan=False, indent=2)
         fd, temporary = tempfile.mkstemp(prefix='.network-', suffix='.tmp', dir=str(self.directory))
         try:
@@ -76,7 +83,10 @@ class DurableCoordinator(Coordinator):
 
     def _transaction(self, operation):
         with self.lock:
+            if getattr(self, "_transaction_depth", 0):
+                return operation()
             snapshot = self._checkpoint()
+            self._transaction_depth = 1
             try:
                 result = operation()
                 self._save()
@@ -87,6 +97,8 @@ class DurableCoordinator(Coordinator):
             except Exception:
                 self._restore(snapshot)
                 raise
+            finally:
+                self._transaction_depth = 0
 
     def enqueue(self, command):
         super().enqueue(command)
